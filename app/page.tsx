@@ -1,15 +1,12 @@
 "use client";
 
 import { useState } from "react";
+// We use 'any' types for simplicity here to match your JS data structure. 
 import { questions, travelerDescriptions, GLOBAL_VOUCHER_CODE } from "./data.js";
-
-const BRAND_COLOR = "#f525bd";
 
 export default function Home() {
   // --- STATE MANAGEMENT ---
   const [currentStep, setCurrentStep] = useState(0);
-  
-  // Store the INDEX of the selected option for each question (e.g., { 0: 1, 1: 3 })
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   
   // View States
@@ -24,7 +21,6 @@ export default function Home() {
   const question = questions[currentStep];
 
   // --- LOGIC: NAVIGATION ---
-  
   const handleOptionSelect = (optionIndex: number) => {
     setSelectedAnswers((prev) => ({
       ...prev,
@@ -38,7 +34,6 @@ export default function Home() {
       if (currentStep < questions.length - 1) {
         setCurrentStep(currentStep + 1);
       } else {
-        // If it's the last question, go to Lead Form
         setShowLeadForm(true);
       }
       setBgOpacity(100);
@@ -55,11 +50,9 @@ export default function Home() {
     }
   };
 
-  // --- LOGIC: SCORING (Calculated at the end) ---
-  
+  // --- LOGIC: SCORING ---
   const calculateResult = () => {
-    // 1. Tally up the scores based on selected answers
-    const finalScores: Record<string, number> = {
+    const finalScores: any = {
       Explorer: 0, Planner: 0, Relaxer: 0, Adventure: 0, Culture: 0,
       Food: 0, Budget: 0, Luxury: 0, FreeSpirit: 0, Lifestyle: 0,
     };
@@ -68,15 +61,12 @@ export default function Home() {
       const selectedOptionIndex = selectedAnswers[qIndex];
       if (selectedOptionIndex !== undefined) {
         const optionScores = q.options[selectedOptionIndex].scores;
-        // Add points
         Object.entries(optionScores).forEach(([type, points]) => {
-          // @ts-ignore
           if (finalScores[type] !== undefined) finalScores[type] += points;
         });
       }
     });
 
-    // 2. Find Winner
     const winningType = Object.keys(finalScores).reduce((a, b) =>
       finalScores[a] > finalScores[b] ? a : b
     );
@@ -86,24 +76,23 @@ export default function Home() {
     setShowResult(true);
   };
 
-  // --- LOGIC: LEAD FORM SUBMIT ---
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userInfo.email) return; // Simple validation
+    if (!userInfo.email) return;
     calculateResult();
   };
 
   // --- BACKGROUND IMAGE LOGIC ---
   const getBackgroundImage = () => {
     if (showResult && winner) {
-      // DYNAMIC RESULT BG: Looks for 'result-Explorer.jpg', 'result-Luxury.jpg' etc.
-      // You must upload these images to /public/images/ later.
-      return `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('/images/result-${winner}.jpg')`;
+      // Result BG: Darker overlay (0.5) to make white text pop
+      return `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/images/result-${winner}.jpg')`;
     }
     
-    // Default Question BG
+    // --- THIS IS THE LINE TO CHANGE BACKGROUND SHADOW ---
+    // Currently set to 0.4 (40% dark). Change to 0.2 for lighter, 0.8 for darker.
     const currentBg = question?.bgImage || '/images/q1.jpeg';
-    return `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${currentBg})`;
+    return `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${currentBg})`; 
   };
 
   return (
@@ -116,11 +105,11 @@ export default function Home() {
     >
       {/* --- HEADER (LOGO) --- */}
       <header className="absolute top-0 right-0 p-6 z-50">
-        {/* Make sure logo.jpg is in /public/images/ */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img 
           src="/images/logo.png" 
           alt="Logo" 
-          className="w-20 md:w-28 h-auto drop-shadow-lg rounded-md"
+          className="w-24 md:w-32 h-auto drop-shadow-xl rounded-lg hover:scale-105 transition-transform"
         />
       </header>
 
@@ -128,17 +117,15 @@ export default function Home() {
       {!showLeadForm && !showResult && (
         <div className="w-full max-w-4xl flex flex-col items-center text-center animate-fade-in-up">
           
-          {/* Step Counter */}
           <span className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-white/70 mb-6 py-2 px-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
             Question {currentStep + 1} / {questions.length}
           </span>
 
-          {/* Question Text */}
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold mb-10 drop-shadow-2xl leading-tight max-w-3xl mx-auto min-h-[120px] flex items-center justify-center">
+          {/* UPDATED: Reduced text size (text-2xl md:text-5xl) */}
+          <h1 className="text-2xl md:text-5xl font-extrabold mb-10 drop-shadow-2xl leading-tight max-w-3xl mx-auto min-h-[100px] flex items-center justify-center">
             {question.question}
           </h1>
 
-          {/* Options Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full max-w-3xl mb-10">
             {question.options.map((option: any, index: number) => {
               const isSelected = selectedAnswers[currentStep] === index;
@@ -154,7 +141,7 @@ export default function Home() {
                     ${isLastAndOdd ? "md:col-span-2 md:w-1/2 md:mx-auto" : "w-full"}
                     ${isSelected 
                       ? `bg-[#f525bd] border-[#f525bd] scale-[1.02] shadow-[0_0_20px_rgba(245,37,189,0.5)]` 
-                      : "bg-white/10 border-white/20 hover:bg-white/20"}
+                      : "bg-white/10 border-white/20 hover:bg-white/20 hover:border-white/40"}
                   `}
                 >
                   {option.text}
@@ -163,24 +150,24 @@ export default function Home() {
             })}
           </div>
 
-          {/* Navigation Buttons (Previous / Next) */}
-          <div className="flex gap-4 w-full max-w-xs mx-auto">
+          {/* UPDATED: Buttons Alignment (Wider max-width, better spacing) */}
+          <div className="flex gap-6 w-full max-w-md mx-auto justify-center">
             <button
               onClick={handlePrevious}
               disabled={currentStep === 0}
-              className={`flex-1 py-3 rounded-xl font-bold uppercase tracking-wider transition-all
-                ${currentStep === 0 ? "opacity-0 pointer-events-none" : "bg-white/10 hover:bg-white/20"}`}
+              className={`flex-1 py-3 px-8 rounded-full font-bold uppercase text-sm tracking-wider transition-all backdrop-blur-md border border-white/30
+                ${currentStep === 0 ? "opacity-0 pointer-events-none" : "bg-white/10 hover:bg-white/20 text-white"}`}
             >
-              Previous
+              Back
             </button>
             
             <button
               onClick={handleNext}
               disabled={selectedAnswers[currentStep] === undefined}
-              className={`flex-1 py-3 rounded-xl font-bold uppercase tracking-wider transition-all shadow-xl
+              className={`flex-1 py-3 px-8 rounded-full font-bold uppercase text-sm tracking-wider transition-all shadow-xl border
                 ${selectedAnswers[currentStep] === undefined 
-                  ? "bg-gray-500/50 cursor-not-allowed text-white/50" 
-                  : "bg-white text-[#f525bd] hover:scale-105"}`}
+                  ? "bg-gray-500/50 border-transparent cursor-not-allowed text-white/50" 
+                  : "bg-white border-white text-[#f525bd] hover:scale-105"}`}
             >
               {currentStep === questions.length - 1 ? "Finish" : "Next"}
             </button>
@@ -191,19 +178,19 @@ export default function Home() {
 
       {/* --- VIEW 2: LEAD CAPTURE FORM --- */}
       {showLeadForm && !showResult && (
-        <div className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl text-center shadow-2xl animate-fade-in">
-          <h2 className="text-3xl font-bold mb-4">Almost There!</h2>
-          <p className="text-white/80 mb-8 leading-relaxed">
-            If you want to know what type of traveler you are, please enter your email address below.
+        <div className="w-full max-w-md bg-black/50 backdrop-blur-xl border border-white/30 p-8 rounded-[2rem] text-center shadow-2xl animate-fade-in">
+          <h2 className="text-3xl font-black mb-4 drop-shadow-lg text-white">Almost There!</h2>
+          <p className="text-white/90 mb-8 leading-relaxed font-medium drop-shadow-md">
+            To reveal your specific traveler persona and get your voucher, please enter your details.
           </p>
 
-          <form onSubmit={handleFormSubmit} className="flex flex-col gap-4 text-left">
+          <form onSubmit={handleFormSubmit} className="flex flex-col gap-5 text-left">
             <div>
-              <label className="text-xs uppercase font-bold text-white/60 ml-1">Email Address <span className="text-[#f525bd]">*</span></label>
+              <label className="text-xs uppercase font-bold text-white/80 ml-3 mb-1 block tracking-wider">Email Address <span className="text-[#f525bd]">*</span></label>
               <input 
                 type="email" 
                 required 
-                className="w-full p-4 rounded-xl bg-white/80 text-black font-medium focus:outline-none focus:ring-4 focus:ring-[#f525bd]/50"
+                className="w-full p-4 rounded-2xl bg-white/90 text-black font-bold focus:outline-none focus:ring-4 focus:ring-[#f525bd]/50 border-transparent transition-all"
                 placeholder="name@example.com"
                 value={userInfo.email}
                 onChange={(e) => setUserInfo({...userInfo, email: e.target.value})}
@@ -211,10 +198,10 @@ export default function Home() {
             </div>
 
             <div>
-              <label className="text-xs uppercase font-bold text-white/60 ml-1">Mobile Number (Optional)</label>
+              <label className="text-xs uppercase font-bold text-white/80 ml-3 mb-1 block tracking-wider">Mobile Number (Optional)</label>
               <input 
                 type="tel" 
-                className="w-full p-4 rounded-xl bg-white/80 text-black font-medium focus:outline-none focus:ring-4 focus:ring-[#f525bd]/50"
+                className="w-full p-4 rounded-2xl bg-white/90 text-black font-bold focus:outline-none focus:ring-4 focus:ring-[#f525bd]/50 border-transparent transition-all"
                 placeholder="+880..."
                 value={userInfo.mobile}
                 onChange={(e) => setUserInfo({...userInfo, mobile: e.target.value})}
@@ -223,9 +210,9 @@ export default function Home() {
 
             <button 
               type="submit"
-              className="mt-4 w-full py-4 bg-[#f525bd] hover:bg-[#d91ea5] text-white font-bold text-lg rounded-xl shadow-[0_0_20px_rgba(245,37,189,0.4)] transition-all hover:scale-[1.02]"
+              className="mt-6 w-full py-4 bg-gradient-to-r from-[#f525bd] to-[#d91ea5] hover:from-[#d91ea5] hover:to-[#f525bd] text-white font-black text-lg rounded-2xl shadow-[0_0_30px_rgba(245,37,189,0.4)] transition-all hover:scale-[1.02] active:scale-98"
             >
-              Reveal My Result
+              REVEAL MY RESULT
             </button>
           </form>
         </div>
@@ -234,46 +221,53 @@ export default function Home() {
 
       {/* --- VIEW 3: FINAL RESULT --- */}
       {showResult && (
-        <div className="w-full max-w-md animate-scale-in flex flex-col items-center">
-          <div className="bg-white text-gray-900 rounded-[2.5rem] overflow-hidden shadow-2xl w-full">
+        <div className="w-full max-w-lg animate-scale-in flex flex-col items-center p-4 text-center">
             
-            {/* Header */}
-            <div className="p-10 pt-12 text-center text-white relative overflow-hidden" style={{ backgroundColor: BRAND_COLOR }}>
-               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
-               <h2 className="text-sm font-bold uppercase tracking-[0.2em] opacity-80 mb-2 relative z-10">Your Traveler Persona</h2>
-               <h3 className="text-5xl font-black tracking-tighter relative z-10">{winner}</h3>
+            {/* FLOATING TEXT HEADER */}
+            <div className="mb-8">
+               <h2 className="text-sm md:text-base font-bold uppercase tracking-[0.3em] text-white mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                 Your Traveler Persona
+               </h2>
+               <h3 className="text-6xl md:text-7xl font-black tracking-tighter text-[#f525bd] drop-shadow-[0_4px_4px_rgba(0,0,0,1)]"
+                   style={{ textShadow: '0 0 40px rgba(245, 37, 189, 0.5)' }}>
+                 {winner}
+               </h3>
             </div>
 
-            {/* Body */}
-            <div className="p-8 text-center">
-              <p className="text-lg text-gray-600 mb-8 font-medium leading-relaxed">
-                {winner && travelerDescriptions[winner as keyof typeof travelerDescriptions]?.text}
-              </p>
+            {/* FLOATING DESCRIPTION */}
+            <p className="text-xl md:text-2xl text-white font-semibold leading-relaxed mb-12 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] max-w-md mx-auto">
+              {winner && travelerDescriptions[winner as keyof typeof travelerDescriptions]?.text}
+            </p>
 
-              {/* VOUCHER TICKET */}
-              <div className="relative group cursor-pointer">
-                  <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-[#f525bd] to-purple-600 opacity-70 blur transition duration-200 group-hover:opacity-100 animate-pulse"></div>
-                  <div className="relative bg-white border-2 border-dashed border-gray-200 p-6 rounded-xl">
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">
-                        Reseller Voucher
-                      </p>
-                      <div className="text-4xl font-black text-[#f525bd] tracking-wide select-all">
+            {/* VOUCHER TICKET */}
+            <div className="relative group cursor-pointer w-full max-w-sm mx-auto transform hover:scale-105 transition-transform duration-300">
+                <div className="absolute -inset-1 rounded-2xl bg-[#f525bd] opacity-70 blur-lg animate-pulse"></div>
+                
+                <div className="relative bg-white border-4 border-white p-6 rounded-xl shadow-2xl">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">
+                      Reseller Voucher
+                    </p>
+                    
+                    <div className="border-t-2 border-b-2 border-dashed border-gray-100 py-4 mb-3">
+                      <div className="text-4xl md:text-5xl font-black text-[#f525bd] tracking-wide select-all drop-shadow-sm">
                         {GLOBAL_VOUCHER_CODE}
                       </div>
-                      <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-400">
-                        Sent to: {userInfo.email}
-                      </div>
-                  </div>
-              </div>
-
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-10 py-3 px-8 rounded-full text-sm font-bold text-gray-500 hover:bg-gray-100 transition-all uppercase tracking-wide"
-              >
-                Retake Quiz
-              </button>
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 font-medium flex items-center justify-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                      Sent to: {userInfo.email}
+                    </div>
+                </div>
             </div>
-          </div>
+
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-12 py-3 px-10 rounded-full text-sm font-bold text-white border-2 border-white/50 hover:bg-white hover:text-[#f525bd] hover:border-white transition-all uppercase tracking-widest drop-shadow-lg"
+            >
+              Retake Quiz
+            </button>
+
         </div>
       )}
     </main>
