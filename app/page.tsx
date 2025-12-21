@@ -1,8 +1,16 @@
 "use client";
 
 import { useState } from "react";
+// Import the font
+import { Montserrat } from "next/font/google";
 // We use 'any' types for simplicity here to match your JS data structure. 
 import { questions, travelerDescriptions, GLOBAL_VOUCHER_CODE } from "./data.js";
+
+// Initialize the font (Montserrat is the closest free match to Proxima Nova)
+const font = Montserrat({ 
+  subsets: ["latin"], 
+  weight: ["400", "600", "700", "900"] 
+});
 
 export default function Home() {
   // --- STATE MANAGEMENT ---
@@ -89,15 +97,16 @@ export default function Home() {
       return `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/images/result-${winner}.jpg')`;
     }
     
-    // --- THIS IS THE LINE TO CHANGE BACKGROUND SHADOW ---
-    // Currently set to 0.4 (40% dark). Change to 0.2 for lighter, 0.8 for darker.
+    // --- BACKGROUND SHADOW SETTING ---
+    // Currently set to 0.4 (40% dark).
     const currentBg = question?.bgImage || '/images/q1.jpeg';
     return `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${currentBg})`; 
   };
 
   return (
     <main
-      className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 text-white transition-all duration-500 ease-in-out bg-cover bg-center bg-no-repeat relative"
+      // Added font.className here to apply "Proxima Nova" look to everything
+      className={`flex min-h-screen flex-col items-center justify-center p-4 md:p-8 text-white transition-all duration-500 ease-in-out bg-cover bg-center bg-no-repeat relative ${font.className}`}
       style={{
         opacity: bgOpacity / 100,
         backgroundImage: getBackgroundImage(),
@@ -107,7 +116,7 @@ export default function Home() {
       <header className="absolute top-0 right-0 p-6 z-50">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img 
-          src="/images/logo.png" 
+          src="/images/logo.png" // Changed to .png based on your code
           alt="Logo" 
           className="w-24 md:w-32 h-auto drop-shadow-xl rounded-lg hover:scale-105 transition-transform"
         />
@@ -115,14 +124,14 @@ export default function Home() {
 
       {/* --- VIEW 1: QUESTIONS --- */}
       {!showLeadForm && !showResult && (
-        <div className="w-full max-w-4xl flex flex-col items-center text-center animate-fade-in-up">
+        <div className="w-full max-w-5xl flex flex-col items-center text-center animate-fade-in-up">
           
           <span className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-white/70 mb-6 py-2 px-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
             Question {currentStep + 1} / {questions.length}
           </span>
 
-          {/* UPDATED: Reduced text size (text-2xl md:text-5xl) */}
-          <h1 className="text-2xl md:text-5xl font-extrabold mb-10 drop-shadow-2xl leading-tight max-w-3xl mx-auto min-h-[100px] flex items-center justify-center">
+          {/* UPDATED: Increased text size back to text-4xl / text-6xl */}
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold mb-10 drop-shadow-2xl leading-tight max-w-4xl mx-auto min-h-[120px] flex items-center justify-center">
             {question.question}
           </h1>
 
@@ -136,8 +145,8 @@ export default function Home() {
                   key={index}
                   onClick={() => handleOptionSelect(index)}
                   className={`
-                    group relative py-5 px-8 backdrop-blur-md border 
-                    rounded-2xl font-bold text-lg transition-all duration-200 ease-out shadow-lg
+                    group relative py-6 px-8 backdrop-blur-md border 
+                    rounded-2xl font-bold text-lg md:text-xl transition-all duration-200 ease-out shadow-lg
                     ${isLastAndOdd ? "md:col-span-2 md:w-1/2 md:mx-auto" : "w-full"}
                     ${isSelected 
                       ? `bg-[#f525bd] border-[#f525bd] scale-[1.02] shadow-[0_0_20px_rgba(245,37,189,0.5)]` 
@@ -150,7 +159,7 @@ export default function Home() {
             })}
           </div>
 
-          {/* UPDATED: Buttons Alignment (Wider max-width, better spacing) */}
+          {/* UPDATED: Buttons Alignment */}
           <div className="flex gap-6 w-full max-w-md mx-auto justify-center">
             <button
               onClick={handlePrevious}
