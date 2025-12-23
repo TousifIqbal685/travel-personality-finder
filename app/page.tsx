@@ -239,7 +239,7 @@ export default function Home() {
             </div>
 
             <div>
-              <label className="text-xs uppercase font-bold text-white/80 ml-3 mb-1 block tracking-wider">Mobile Number (Optional)</label>
+              <label className="text-xs uppercase font-bold text-white/80 ml-3 mb-1 block tracking-wider">WhatsApp Number (Optional)</label>
               <input 
                 type="tel" 
                 className="w-full p-4 rounded-2xl bg-white/90 text-black font-bold focus:outline-none focus:ring-4 focus:ring-[#f525bd]/50 border-transparent transition-all"

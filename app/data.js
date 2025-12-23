@@ -37,7 +37,6 @@ export const questions = [
       { text: "Culture & history", scores: { Culture: 2, Planner: 1 } },
       { text: "Food & lifestyle", scores: { Food: 2 } },
       { text: "Relaxation", scores: { Relaxer: 2 } },
-      { text: "Shopping", scores: { Lifestyle: 1 } },
       { text: "Budget-friendly", scores: { Budget: 2 } },
     ],
   },
