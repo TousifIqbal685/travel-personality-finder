@@ -1,15 +1,13 @@
 "use client";
 
 import { useState } from "react";
-// Import the font
-import { Montserrat } from "next/font/google";
-// We use 'any' types for simplicity here to match your JS data structure. 
+import { Inter } from "next/font/google";
+// 1. Import Supabase client
+import { supabase } from "./supabase"; 
 import { questions, travelerDescriptions, GLOBAL_VOUCHER_CODE } from "./data.js";
 
-// Initialize the font (Montserrat is the closest free match to Proxima Nova)
-const font = Montserrat({ 
-  subsets: ["latin"], 
-  weight: ["400", "600", "700", "900"] 
+const inter = Inter({ 
+  subsets: ["latin"],
 });
 
 export default function Home() {
@@ -20,6 +18,7 @@ export default function Home() {
   // View States
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added loading state
   
   // Data States
   const [winner, setWinner] = useState<string | null>(null);
@@ -37,7 +36,7 @@ export default function Home() {
   };
 
   const handleNext = () => {
-    setBgOpacity(0); // Fade out effect
+    setBgOpacity(0); 
     setTimeout(() => {
       if (currentStep < questions.length - 1) {
         setCurrentStep(currentStep + 1);
@@ -58,8 +57,14 @@ export default function Home() {
     }
   };
 
-  // --- LOGIC: SCORING ---
-  const calculateResult = () => {
+  // --- LOGIC: SCORING & SUBMISSION ---
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userInfo.email) return;
+    
+    setIsSubmitting(true);
+
+    // 1. Calculate the result locally first
     const finalScores: any = {
       Explorer: 0, Planner: 0, Relaxer: 0, Adventure: 0, Culture: 0,
       Food: 0, Budget: 0, Luxury: 0, FreeSpirit: 0, Lifestyle: 0,
@@ -78,35 +83,46 @@ export default function Home() {
     const winningType = Object.keys(finalScores).reduce((a, b) =>
       finalScores[a] > finalScores[b] ? a : b
     );
-    
+
+    // 2. Save to Supabase
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .insert([
+          { 
+            email: userInfo.email, 
+            mobile: userInfo.mobile,
+            result: winningType // Saving the result type
+          },
+        ]);
+
+      if (error) {
+        console.error('Error inserting data:', error);
+        // Optionally handle error (e.g. alert user), but usually we just proceed
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+    }
+
+    // 3. Update State to show result
     setWinner(winningType);
+    setIsSubmitting(false);
     setShowLeadForm(false);
     setShowResult(true);
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userInfo.email) return;
-    calculateResult();
   };
 
   // --- BACKGROUND IMAGE LOGIC ---
   const getBackgroundImage = () => {
     if (showResult && winner) {
-      // Result BG: Darker overlay (0.5) to make white text pop
       return `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/images/result-${winner}.jpg')`;
     }
-    
-    // --- BACKGROUND SHADOW SETTING ---
-    // Currently set to 0.4 (40% dark).
     const currentBg = question?.bgImage || '/images/q1.jpeg';
     return `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${currentBg})`; 
   };
 
   return (
     <main
-      // Added font.className here to apply "Proxima Nova" look to everything
-      className={`flex min-h-screen flex-col items-center justify-center p-4 md:p-8 text-white transition-all duration-500 ease-in-out bg-cover bg-center bg-no-repeat relative ${font.className}`}
+      className={`flex min-h-screen flex-col items-center justify-center p-4 md:p-8 text-white transition-all duration-500 ease-in-out bg-cover bg-center bg-no-repeat relative ${inter.className}`}
       style={{
         opacity: bgOpacity / 100,
         backgroundImage: getBackgroundImage(),
@@ -116,7 +132,7 @@ export default function Home() {
       <header className="absolute top-0 right-0 p-6 z-50">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img 
-          src="/images/logo.png" // Changed to .png based on your code
+          src="/images/logo.png"
           alt="Logo" 
           className="w-24 md:w-32 h-auto drop-shadow-xl rounded-lg hover:scale-105 transition-transform"
         />
@@ -130,7 +146,6 @@ export default function Home() {
             Question {currentStep + 1} / {questions.length}
           </span>
 
-          {/* UPDATED: Increased text size back to text-4xl / text-6xl */}
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold mb-10 drop-shadow-2xl leading-tight max-w-4xl mx-auto min-h-[120px] flex items-center justify-center">
             {question.question}
           </h1>
@@ -159,13 +174,15 @@ export default function Home() {
             })}
           </div>
 
-          {/* UPDATED: Buttons Alignment */}
           <div className="flex gap-6 w-full max-w-md mx-auto justify-center">
             <button
               onClick={handlePrevious}
               disabled={currentStep === 0}
-              className={`flex-1 py-3 px-8 rounded-full font-bold uppercase text-sm tracking-wider transition-all backdrop-blur-md border border-white/30
-                ${currentStep === 0 ? "opacity-0 pointer-events-none" : "bg-white/10 hover:bg-white/20 text-white"}`}
+              className={`py-3 px-8 rounded-full font-bold uppercase text-sm tracking-wider transition-all backdrop-blur-md border border-white/30
+                ${currentStep === 0 
+                  ? "hidden" 
+                  : "flex-1 bg-white/10 hover:bg-white/20 text-white" 
+                }`}
             >
               Back
             </button>
@@ -219,9 +236,11 @@ export default function Home() {
 
             <button 
               type="submit"
-              className="mt-6 w-full py-4 bg-gradient-to-r from-[#f525bd] to-[#d91ea5] hover:from-[#d91ea5] hover:to-[#f525bd] text-white font-black text-lg rounded-2xl shadow-[0_0_30px_rgba(245,37,189,0.4)] transition-all hover:scale-[1.02] active:scale-98"
+              disabled={isSubmitting}
+              className={`mt-6 w-full py-4 bg-gradient-to-r from-[#f525bd] to-[#d91ea5] hover:from-[#d91ea5] hover:to-[#f525bd] text-white font-black text-lg rounded-2xl shadow-[0_0_30px_rgba(245,37,189,0.4)] transition-all hover:scale-[1.02] active:scale-98
+                ${isSubmitting ? "opacity-70 cursor-wait" : ""}`}
             >
-              REVEAL MY RESULT
+              {isSubmitting ? "GENERATING..." : "REVEAL MY RESULT"}
             </button>
           </form>
         </div>
@@ -232,7 +251,6 @@ export default function Home() {
       {showResult && (
         <div className="w-full max-w-lg animate-scale-in flex flex-col items-center p-4 text-center">
             
-            {/* FLOATING TEXT HEADER */}
             <div className="mb-8">
                <h2 className="text-sm md:text-base font-bold uppercase tracking-[0.3em] text-white mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
                  Your Traveler Persona
@@ -243,12 +261,10 @@ export default function Home() {
                </h3>
             </div>
 
-            {/* FLOATING DESCRIPTION */}
             <p className="text-xl md:text-2xl text-white font-semibold leading-relaxed mb-12 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] max-w-md mx-auto">
               {winner && travelerDescriptions[winner as keyof typeof travelerDescriptions]?.text}
             </p>
 
-            {/* VOUCHER TICKET */}
             <div className="relative group cursor-pointer w-full max-w-sm mx-auto transform hover:scale-105 transition-transform duration-300">
                 <div className="absolute -inset-1 rounded-2xl bg-[#f525bd] opacity-70 blur-lg animate-pulse"></div>
                 
@@ -268,6 +284,10 @@ export default function Home() {
                       Sent to: {userInfo.email}
                     </div>
                 </div>
+
+                <p className="mt-8 text-xs md:text-sm text-white/90 font-medium tracking-wide drop-shadow-md animate-pulse">
+               Take a screenshot of this to apply the voucher for your next RYOKO service!
+            </p>
             </div>
 
             <button
