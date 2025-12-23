@@ -1,13 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { Inter } from "next/font/google";
-// 1. Import Supabase client
+// 1. Import localFont
+import localFont from "next/font/local";
 import { supabase } from "./supabase"; 
 import { questions, travelerDescriptions, GLOBAL_VOUCHER_CODE } from "./data.js";
 
-const inter = Inter({ 
-  subsets: ["latin"],
+// 2. Configure Proxima Nova using the NEW filenames from your screenshots
+const proxima = localFont({
+  src: [
+    {
+      // Using the one found at the bottom of your last screenshot
+      path: './fonts/ProximaNova-Regular.otf', 
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      // Using the one with spaces found in your list
+      path: './fonts/Proxima Nova Bold.otf',
+      weight: '700',
+      style: 'normal',
+    },
+    {
+      // Using the extrabold version for headers
+      path: './fonts/Proxima Nova Extrabold.otf',
+      weight: '800',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-proxima', 
 });
 
 export default function Home() {
@@ -18,7 +39,7 @@ export default function Home() {
   // View States
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [showResult, setShowResult] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Data States
   const [winner, setWinner] = useState<string | null>(null);
@@ -64,7 +85,6 @@ export default function Home() {
     
     setIsSubmitting(true);
 
-    // 1. Calculate the result locally first
     const finalScores: any = {
       Explorer: 0, Planner: 0, Relaxer: 0, Adventure: 0, Culture: 0,
       Food: 0, Budget: 0, Luxury: 0, FreeSpirit: 0, Lifestyle: 0,
@@ -84,7 +104,6 @@ export default function Home() {
       finalScores[a] > finalScores[b] ? a : b
     );
 
-    // 2. Save to Supabase
     try {
       const { error } = await supabase
         .from('leads')
@@ -92,26 +111,23 @@ export default function Home() {
           { 
             email: userInfo.email, 
             mobile: userInfo.mobile,
-            result: winningType // Saving the result type
+            result: winningType
           },
         ]);
 
       if (error) {
         console.error('Error inserting data:', error);
-        // Optionally handle error (e.g. alert user), but usually we just proceed
       }
     } catch (err) {
       console.error('Unexpected error:', err);
     }
 
-    // 3. Update State to show result
     setWinner(winningType);
     setIsSubmitting(false);
     setShowLeadForm(false);
     setShowResult(true);
   };
 
-  // --- BACKGROUND IMAGE LOGIC ---
   const getBackgroundImage = () => {
     if (showResult && winner) {
       return `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/images/result-${winner}.jpg')`;
@@ -122,7 +138,7 @@ export default function Home() {
 
   return (
     <main
-      className={`flex min-h-screen flex-col items-center justify-center p-4 md:p-8 text-white transition-all duration-500 ease-in-out bg-cover bg-center bg-no-repeat relative ${inter.className}`}
+      className={`flex min-h-screen flex-col items-center justify-center p-4 md:p-8 text-white transition-all duration-500 ease-in-out bg-cover bg-center bg-no-repeat relative ${proxima.className}`}
       style={{
         opacity: bgOpacity / 100,
         backgroundImage: getBackgroundImage(),
@@ -130,7 +146,6 @@ export default function Home() {
     >
       {/* --- HEADER (LOGO) --- */}
       <header className="absolute top-0 right-0 p-6 z-50">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img 
           src="/images/logo.png"
           alt="Logo" 
@@ -285,9 +300,10 @@ export default function Home() {
                     </div>
                 </div>
 
+                {/* Screenshot Instruction */}
                 <p className="mt-8 text-xs md:text-sm text-white/90 font-medium tracking-wide drop-shadow-md animate-pulse">
-               Take a screenshot of this to apply the voucher for your next RYOKO service!
-            </p>
+                   Take a screenshot of this to apply the voucher for your next RYOKO service!
+                </p>
             </div>
 
             <button
