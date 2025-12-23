@@ -6,23 +6,20 @@ import localFont from "next/font/local";
 import { supabase } from "./supabase"; 
 import { questions, travelerDescriptions, GLOBAL_VOUCHER_CODE } from "./data.js";
 
-// 2. Configure Proxima Nova using the NEW filenames from your screenshots
+// 2. Configure Proxima Nova using the filenames from your screenshots
 const proxima = localFont({
   src: [
     {
-      // Using the one found at the bottom of your last screenshot
       path: './fonts/ProximaNova-Regular.otf', 
       weight: '400',
       style: 'normal',
     },
     {
-      // Using the one with spaces found in your list
       path: './fonts/Proxima Nova Bold.otf',
       weight: '700',
       style: 'normal',
     },
     {
-      // Using the extrabold version for headers
       path: './fonts/Proxima Nova Extrabold.otf',
       weight: '800',
       style: 'normal',
@@ -85,9 +82,18 @@ export default function Home() {
     
     setIsSubmitting(true);
 
+    // UPDATED: Using the simple ORIGINAL keys so they match the filenames and questions
     const finalScores: any = {
-      Explorer: 0, Planner: 0, Relaxer: 0, Adventure: 0, Culture: 0,
-      Food: 0, Budget: 0, Luxury: 0, FreeSpirit: 0, Lifestyle: 0,
+      Explorer: 0, 
+      Planner: 0, 
+      Relaxer: 0, 
+      Adventure: 0, 
+      Culture: 0,
+      Food: 0, 
+      Budget: 0, 
+      Luxury: 0, 
+      FreeSpirit: 0, 
+      Lifestyle: 0,
     };
 
     questions.forEach((q: any, qIndex: number) => {
@@ -111,7 +117,7 @@ export default function Home() {
           { 
             email: userInfo.email, 
             mobile: userInfo.mobile,
-            result: winningType
+            result: winningType // We save the internal ID (e.g., "Culture")
           },
         ]);
 
@@ -130,6 +136,7 @@ export default function Home() {
 
   const getBackgroundImage = () => {
     if (showResult && winner) {
+      // Logic: winner = "Culture", so it looks for "/images/result-Culture.jpg" (Matches your file)
       return `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/images/result-${winner}.jpg')`;
     }
     const currentBg = question?.bgImage || '/images/q1.jpeg';
@@ -155,13 +162,13 @@ export default function Home() {
 
       {/* --- VIEW 1: QUESTIONS --- */}
       {!showLeadForm && !showResult && (
-        <div className="w-full max-w-5xl flex flex-col items-center text-center animate-fade-in-up">
+        <div className="w-full max-w-7xl flex flex-col items-center text-center animate-fade-in-up">
           
           <span className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-white/70 mb-6 py-2 px-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
             Question {currentStep + 1} / {questions.length}
           </span>
 
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold mb-10 drop-shadow-2xl leading-tight max-w-4xl mx-auto min-h-[120px] flex items-center justify-center">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold mb-10 drop-shadow-2xl leading-tight w-full max-w-7xl mx-auto min-h-[120px] flex items-center justify-center">
             {question.question}
           </h1>
 
@@ -270,9 +277,11 @@ export default function Home() {
                <h2 className="text-sm md:text-base font-bold uppercase tracking-[0.3em] text-white mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
                  Your Traveler Persona
                </h2>
+               
+               {/* UPDATED: Displaying the .title property instead of the raw winner ID */}
                <h3 className="text-6xl md:text-7xl font-black tracking-tighter text-[#f525bd] drop-shadow-[0_4px_4px_rgba(0,0,0,1)]"
                    style={{ textShadow: '0 0 40px rgba(245, 37, 189, 0.5)' }}>
-                 {winner}
+                 {winner && travelerDescriptions[winner as keyof typeof travelerDescriptions]?.title}
                </h3>
             </div>
 
@@ -285,7 +294,7 @@ export default function Home() {
                 
                 <div className="relative bg-white border-4 border-white p-6 rounded-xl shadow-2xl">
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">
-                      Reseller Voucher
+                      Welcome Coupon
                     </p>
                     
                     <div className="border-t-2 border-b-2 border-dashed border-gray-100 py-4 mb-3">
@@ -293,16 +302,11 @@ export default function Home() {
                         {GLOBAL_VOUCHER_CODE}
                       </div>
                     </div>
-                    
-                    <div className="text-xs text-gray-500 font-medium flex items-center justify-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                      Sent to: {userInfo.email}
-                    </div>
                 </div>
 
                 {/* Screenshot Instruction */}
                 <p className="mt-8 text-xs md:text-sm text-white/90 font-medium tracking-wide drop-shadow-md animate-pulse">
-                   Take a screenshot of this to apply the voucher for your next RYOKO service!
+                   Take a screenshot of this to apply the voucher for your next buy on RYOKO!
                 </p>
             </div>
 
