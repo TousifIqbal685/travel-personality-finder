@@ -5,7 +5,7 @@ import localFont from "next/font/local";
 import { supabase } from "./supabase"; 
 import { questions, travelerDescriptions, GLOBAL_VOUCHER_CODE } from "./data.js";
 
-// Configure Proxima Nova
+// Configure Proxima Nova (ensure these fonts exist in your public/fonts folder)
 const proxima = localFont({
   src: [
     {
@@ -81,10 +81,24 @@ export default function Home() {
     
     setIsSubmitting(true);
 
+    // 1. Calculate Winner
     const finalScores: any = {
       Explorer: 0, Planner: 0, Relaxer: 0, Adventure: 0, Culture: 0,
       Food: 0, Budget: 0, Luxury: 0, FreeSpirit: 0, Lifestyle: 0,
     };
+
+    // 2. COMPILE ANSWERS FOR DB
+    // We loop through all questions to find what the user clicked
+    const userAnswersList = questions.map((q: any, index: number) => {
+      const selectedIdx = selectedAnswers[index];
+      // Get the text of the selected option, or "Skipped" if something went wrong
+      const answerText = selectedIdx !== undefined ? q.options[selectedIdx].text : "Skipped";
+      
+      return {
+        question: q.question,
+        answer: answerText
+      };
+    });
 
     questions.forEach((q: any, qIndex: number) => {
       const selectedOptionIndex = selectedAnswers[qIndex];
@@ -101,13 +115,15 @@ export default function Home() {
     );
 
     try {
+      // 3. Insert into Supabase with the new 'details' column
       const { error } = await supabase
         .from('leads')
         .insert([
           { 
             email: userInfo.email, 
             mobile: userInfo.mobile,
-            result: winningType 
+            result: winningType,
+            details: userAnswersList // <--- THIS SENDS THE Q&A LIST
           },
         ]);
 
@@ -293,19 +309,17 @@ export default function Home() {
                     </div>
 
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-2">
-                        Book from 5th Jan till 30th April 2026
+                        Valid from 5th Jan till 30th April 2026
                     </p>
                     
-                    {/* --- UPDATED: T&C HYPERLINK --- */}
-                    {/* Points to .pdf, base color #f79b4c, hover #f5831f */}
+                    {/* --- T&C HYPERLINK --- */}
                     <a 
                       href="/terms.pdf" 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="absolute bottom-3 right-4 text-[11px] font-bold text-[#f79b4c] hover:text-[#f5831f] underline transition-colors"
+                      className="absolute bottom-3 right-4 text-[9px] font-bold text-[#f79b4c] hover:text-[#f5831f] underline transition-colors"
                     >
                       T&C
-                      <p>Applied</p>
                     </a>
                 </div>
 
