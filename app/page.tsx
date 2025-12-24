@@ -293,7 +293,7 @@ export default function Home() {
                     </div>
 
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-2">
-                        Valid from 5th Jan till 30th April 2026
+                        Book from 5th Jan till 30th April 2026
                     </p>
                     
                     {/* --- UPDATED: T&C HYPERLINK --- */}
