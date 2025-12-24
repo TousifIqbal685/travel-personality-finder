@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-// 1. Import localFont
 import localFont from "next/font/local";
 import { supabase } from "./supabase"; 
 import { questions, travelerDescriptions, GLOBAL_VOUCHER_CODE } from "./data.js";
 
-// 2. Configure Proxima Nova using the filenames from your screenshots
+// Configure Proxima Nova
 const proxima = localFont({
   src: [
     {
@@ -82,18 +81,9 @@ export default function Home() {
     
     setIsSubmitting(true);
 
-    // UPDATED: Using the simple ORIGINAL keys so they match the filenames and questions
     const finalScores: any = {
-      Explorer: 0, 
-      Planner: 0, 
-      Relaxer: 0, 
-      Adventure: 0, 
-      Culture: 0,
-      Food: 0, 
-      Budget: 0, 
-      Luxury: 0, 
-      FreeSpirit: 0, 
-      Lifestyle: 0,
+      Explorer: 0, Planner: 0, Relaxer: 0, Adventure: 0, Culture: 0,
+      Food: 0, Budget: 0, Luxury: 0, FreeSpirit: 0, Lifestyle: 0,
     };
 
     questions.forEach((q: any, qIndex: number) => {
@@ -117,7 +107,7 @@ export default function Home() {
           { 
             email: userInfo.email, 
             mobile: userInfo.mobile,
-            result: winningType // We save the internal ID (e.g., "Culture")
+            result: winningType 
           },
         ]);
 
@@ -136,7 +126,6 @@ export default function Home() {
 
   const getBackgroundImage = () => {
     if (showResult && winner) {
-      // Logic: winner = "Culture", so it looks for "/images/result-Culture.jpg" (Matches your file)
       return `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/images/result-${winner}.jpg')`;
     }
     const currentBg = question?.bgImage || '/images/q1.jpeg';
@@ -278,7 +267,6 @@ export default function Home() {
                  Your Traveler Persona
                </h2>
                
-               {/* UPDATED: Displaying the .title property instead of the raw winner ID */}
                <h3 className="text-6xl md:text-7xl font-black tracking-tighter text-[#f525bd] drop-shadow-[0_4px_4px_rgba(0,0,0,1)]"
                    style={{ textShadow: '0 0 40px rgba(245, 37, 189, 0.5)' }}>
                  {winner && travelerDescriptions[winner as keyof typeof travelerDescriptions]?.title}
@@ -289,24 +277,39 @@ export default function Home() {
               {winner && travelerDescriptions[winner as keyof typeof travelerDescriptions]?.text}
             </p>
 
+            {/* --- VOUCHER TICKET SECTION --- */}
             <div className="relative group cursor-pointer w-full max-w-sm mx-auto transform hover:scale-105 transition-transform duration-300">
                 <div className="absolute -inset-1 rounded-2xl bg-[#f525bd] opacity-70 blur-lg animate-pulse"></div>
                 
-                <div className="relative bg-white border-4 border-white p-6 rounded-xl shadow-2xl">
+                <div className="relative bg-white border-4 border-white p-6 pb-8 rounded-xl shadow-2xl">
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">
                       Welcome Coupon
                     </p>
                     
-                    <div className="border-t-2 border-b-2 border-dashed border-gray-100 py-4 mb-3">
+                    <div className="border-t-2 border-b-2 border-dashed border-gray-100 py-4 mb-1">
                       <div className="text-4xl md:text-5xl font-black text-[#f525bd] tracking-wide select-all drop-shadow-sm">
                         {GLOBAL_VOUCHER_CODE}
                       </div>
                     </div>
+
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-2">
+                        Valid from 5th Jan till 30th April 2026
+                    </p>
+                    
+                    {/* --- UPDATED: T&C HYPERLINK --- */}
+                    {/* Points to .pdf, base color #f79b4c, hover #f5831f */}
+                    <a 
+                      href="/terms.pdf" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="absolute bottom-3 right-4 text-[18px] font-bold text-[#f79b4c] hover:text-[#f5831f] underline transition-colors"
+                    >
+                      T&C
+                    </a>
                 </div>
 
-                {/* Screenshot Instruction */}
                 <p className="mt-8 text-xs md:text-sm text-white/90 font-medium tracking-wide drop-shadow-md animate-pulse">
-                   Take a screenshot of this to apply the voucher for your next buy on RYOKO!
+                   Take a screenshot of this to apply the voucher for your next buy on RYOKO! 
                 </p>
             </div>
 
