@@ -302,9 +302,10 @@ export default function Home() {
                       href="/terms.pdf" 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="absolute bottom-3 right-4 text-[18px] font-bold text-[#f79b4c] hover:text-[#f5831f] underline transition-colors"
+                      className="absolute bottom-3 right-4 text-[11px] font-bold text-[#f79b4c] hover:text-[#f5831f] underline transition-colors"
                     >
                       T&C
+                      <p>Applied</p>
                     </a>
                 </div>
 
