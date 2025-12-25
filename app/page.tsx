@@ -5,7 +5,7 @@ import localFont from "next/font/local";
 import { supabase } from "./supabase"; 
 import { questions, travelerDescriptions, GLOBAL_VOUCHER_CODE } from "./data.js";
 
-// Configure Proxima Nova (ensure these fonts exist in your public/fonts folder)
+// Configure Proxima Nova
 const proxima = localFont({
   src: [
     {
@@ -33,9 +33,9 @@ export default function Home() {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   
   // View States
-  const [showLeadForm, setShowLeadForm] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVoucherUnlocked, setIsVoucherUnlocked] = useState(false); // NEW STATE
   
   // Data States
   const [winner, setWinner] = useState<string | null>(null);
@@ -43,6 +43,29 @@ export default function Home() {
   const [bgOpacity, setBgOpacity] = useState(100);
 
   const question = questions[currentStep];
+
+  // --- LOGIC: SCORING ---
+  // We moved this out to a helper so we can call it anytime
+  const calculateWinner = () => {
+    const finalScores: any = {
+      Explorer: 0, Planner: 0, Relaxer: 0, Adventure: 0, Culture: 0,
+      Food: 0, Budget: 0, Luxury: 0, FreeSpirit: 0, Lifestyle: 0,
+    };
+
+    questions.forEach((q: any, qIndex: number) => {
+      const selectedOptionIndex = selectedAnswers[qIndex];
+      if (selectedOptionIndex !== undefined) {
+        const optionScores = q.options[selectedOptionIndex].scores;
+        Object.entries(optionScores).forEach(([type, points]) => {
+          if (finalScores[type] !== undefined) finalScores[type] += points;
+        });
+      }
+    });
+
+    return Object.keys(finalScores).reduce((a, b) =>
+      finalScores[a] > finalScores[b] ? a : b
+    );
+  };
 
   // --- LOGIC: NAVIGATION ---
   const handleOptionSelect = (optionIndex: number) => {
@@ -58,7 +81,10 @@ export default function Home() {
       if (currentStep < questions.length - 1) {
         setCurrentStep(currentStep + 1);
       } else {
-        setShowLeadForm(true);
+        // --- NEW LOGIC: SHOW RESULT IMMEDIATELY ---
+        const winningType = calculateWinner();
+        setWinner(winningType);
+        setShowResult(true);
       }
       setBgOpacity(100);
     }, 300);
@@ -74,70 +100,39 @@ export default function Home() {
     }
   };
 
-  // --- LOGIC: SCORING & SUBMISSION ---
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  // --- LOGIC: UNLOCK VOUCHER (SUBMIT TO DB) ---
+  const handleUnlockVoucher = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInfo.email) return;
     
     setIsSubmitting(true);
 
-    // 1. Calculate Winner
-    const finalScores: any = {
-      Explorer: 0, Planner: 0, Relaxer: 0, Adventure: 0, Culture: 0,
-      Food: 0, Budget: 0, Luxury: 0, FreeSpirit: 0, Lifestyle: 0,
-    };
-
-    // 2. COMPILE ANSWERS FOR DB
-    // We loop through all questions to find what the user clicked
+    // Prepare Detailed Answers for Database
     const userAnswersList = questions.map((q: any, index: number) => {
       const selectedIdx = selectedAnswers[index];
-      // Get the text of the selected option, or "Skipped" if something went wrong
       const answerText = selectedIdx !== undefined ? q.options[selectedIdx].text : "Skipped";
-      
-      return {
-        question: q.question,
-        answer: answerText
-      };
+      return { question: q.question, answer: answerText };
     });
-
-    questions.forEach((q: any, qIndex: number) => {
-      const selectedOptionIndex = selectedAnswers[qIndex];
-      if (selectedOptionIndex !== undefined) {
-        const optionScores = q.options[selectedOptionIndex].scores;
-        Object.entries(optionScores).forEach(([type, points]) => {
-          if (finalScores[type] !== undefined) finalScores[type] += points;
-        });
-      }
-    });
-
-    const winningType = Object.keys(finalScores).reduce((a, b) =>
-      finalScores[a] > finalScores[b] ? a : b
-    );
 
     try {
-      // 3. Insert into Supabase with the new 'details' column
       const { error } = await supabase
         .from('leads')
         .insert([
           { 
             email: userInfo.email, 
             mobile: userInfo.mobile,
-            result: winningType,
-            details: userAnswersList // <--- THIS SENDS THE Q&A LIST
+            result: winner, // Winner is already calculated
+            details: userAnswersList
           },
         ]);
 
-      if (error) {
-        console.error('Error inserting data:', error);
-      }
+      if (error) console.error('Error inserting data:', error);
     } catch (err) {
       console.error('Unexpected error:', err);
     }
 
-    setWinner(winningType);
     setIsSubmitting(false);
-    setShowLeadForm(false);
-    setShowResult(true);
+    setIsVoucherUnlocked(true); // REVEAL THE CODE
   };
 
   const getBackgroundImage = () => {
@@ -166,7 +161,7 @@ export default function Home() {
       </header>
 
       {/* --- VIEW 1: QUESTIONS --- */}
-      {!showLeadForm && !showResult && (
+      {!showResult && (
         <div className="w-full max-w-7xl flex flex-col items-center text-center animate-fade-in-up">
           
           <span className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-white/70 mb-6 py-2 px-5 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
@@ -228,61 +223,15 @@ export default function Home() {
         </div>
       )}
 
-
-      {/* --- VIEW 2: LEAD CAPTURE FORM --- */}
-      {showLeadForm && !showResult && (
-        <div className="w-full max-w-md bg-black/50 backdrop-blur-xl border border-white/30 p-8 rounded-[2rem] text-center shadow-2xl animate-fade-in">
-          <h2 className="text-3xl font-black mb-4 drop-shadow-lg text-white">Almost There!</h2>
-          <p className="text-white/90 mb-8 leading-relaxed font-medium drop-shadow-md">
-            To reveal your specific traveler persona and get your voucher, please enter your details.
-          </p>
-
-          <form onSubmit={handleFormSubmit} className="flex flex-col gap-5 text-left">
-            <div>
-              <label className="text-xs uppercase font-bold text-white/80 ml-3 mb-1 block tracking-wider">Email Address <span className="text-[#f525bd]">*</span></label>
-              <input 
-                type="email" 
-                required 
-                className="w-full p-4 rounded-2xl bg-white/90 text-black font-bold focus:outline-none focus:ring-4 focus:ring-[#f525bd]/50 border-transparent transition-all"
-                placeholder="name@example.com"
-                value={userInfo.email}
-                onChange={(e) => setUserInfo({...userInfo, email: e.target.value})}
-              />
-            </div>
-
-            <div>
-              <label className="text-xs uppercase font-bold text-white/80 ml-3 mb-1 block tracking-wider">WhatsApp Number</label>
-              <input 
-                type="tel" 
-                className="w-full p-4 rounded-2xl bg-white/90 text-black font-bold focus:outline-none focus:ring-4 focus:ring-[#f525bd]/50 border-transparent transition-all"
-                placeholder="+880..."
-                value={userInfo.mobile}
-                onChange={(e) => setUserInfo({...userInfo, mobile: e.target.value})}
-              />
-            </div>
-
-            <button 
-              type="submit"
-              disabled={isSubmitting}
-              className={`mt-6 w-full py-4 bg-gradient-to-r from-[#f525bd] to-[#d91ea5] hover:from-[#d91ea5] hover:to-[#f525bd] text-white font-black text-lg rounded-2xl shadow-[0_0_30px_rgba(245,37,189,0.4)] transition-all hover:scale-[1.02] active:scale-98
-                ${isSubmitting ? "opacity-70 cursor-wait" : ""}`}
-            >
-              {isSubmitting ? "GENERATING..." : "REVEAL MY RESULT"}
-            </button>
-          </form>
-        </div>
-      )}
-
-
-      {/* --- VIEW 3: FINAL RESULT --- */}
+      {/* --- VIEW 2: FINAL RESULT (With Unlocked/Locked Voucher) --- */}
       {showResult && (
         <div className="w-full max-w-lg animate-scale-in flex flex-col items-center p-4 text-center">
             
+            {/* 1. PERSONALITY RESULT (Always Visible) */}
             <div className="mb-8">
                <h2 className="text-sm md:text-base font-bold uppercase tracking-[0.3em] text-white mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
                  Your Traveler Persona
                </h2>
-               
                <h3 className="text-6xl md:text-7xl font-black tracking-tighter text-[#f525bd] drop-shadow-[0_4px_4px_rgba(0,0,0,1)]"
                    style={{ textShadow: '0 0 40px rgba(245, 37, 189, 0.5)' }}>
                  {winner && travelerDescriptions[winner as keyof typeof travelerDescriptions]?.title}
@@ -293,40 +242,81 @@ export default function Home() {
               {winner && travelerDescriptions[winner as keyof typeof travelerDescriptions]?.text}
             </p>
 
-            {/* --- VOUCHER TICKET SECTION --- */}
-            <div className="relative group cursor-pointer w-full max-w-sm mx-auto transform hover:scale-105 transition-transform duration-300">
+            {/* 2. VOUCHER SECTION (Changes based on Unlock State) */}
+            <div className="relative w-full max-w-sm mx-auto transition-transform duration-300 hover:scale-[1.01]">
                 <div className="absolute -inset-1 rounded-2xl bg-[#f525bd] opacity-70 blur-lg animate-pulse"></div>
                 
-                <div className="relative bg-white border-4 border-white p-6 pb-8 rounded-xl shadow-2xl">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">
-                      Welcome Coupon
-                    </p>
+                <div className="relative bg-white border-4 border-white p-6 pb-8 rounded-xl shadow-2xl text-gray-800">
                     
-                    <div className="border-t-2 border-b-2 border-dashed border-gray-100 py-4 mb-1">
-                      <div className="text-4xl md:text-5xl font-black text-[#f525bd] tracking-wide select-all drop-shadow-sm">
-                        {GLOBAL_VOUCHER_CODE}
+                    {!isVoucherUnlocked ? (
+                      // --- LOCKED STATE: FORM ---
+                      <form onSubmit={handleUnlockVoucher} className="flex flex-col gap-3">
+                        <p className="text-sm font-bold text-[#f525bd] uppercase tracking-widest mb-2">
+                           Unlock Your $500 Voucher
+                        </p>
+                        <p className="text-xs text-gray-500 mb-4">
+                          Enter your details below to reveal your exclusive coupon code.
+                        </p>
+
+                        <input 
+                          type="email" 
+                          required 
+                          placeholder="Email Address"
+                          className="w-full p-3 bg-gray-50 rounded-lg text-sm font-bold border border-gray-200 focus:outline-none focus:border-[#f525bd] text-gray-900 placeholder:text-gray-400"
+                          value={userInfo.email}
+                          onChange={(e) => setUserInfo({...userInfo, email: e.target.value})}
+                        />
+                        <input 
+                          type="tel" 
+                          placeholder="Phone (Optional)"
+                          className="w-full p-3 bg-gray-50 rounded-lg text-sm font-bold border border-gray-200 focus:outline-none focus:border-[#f525bd] text-gray-900 placeholder:text-gray-400"
+                          value={userInfo.mobile}
+                          onChange={(e) => setUserInfo({...userInfo, mobile: e.target.value})}
+                        />
+
+                        <button 
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="mt-2 w-full py-3 bg-[#f525bd] hover:bg-[#d91ea5] text-white font-black text-sm uppercase rounded-lg shadow-md transition-all disabled:opacity-70"
+                        >
+                          {isSubmitting ? "Unlocking..." : "Get Voucher Code"}
+                        </button>
+                      </form>
+                    ) : (
+                      // --- UNLOCKED STATE: CODE ---
+                      <div className="animate-fade-in">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-3">
+                          Welcome Coupon
+                        </p>
+                        
+                        <div className="border-t-2 border-b-2 border-dashed border-gray-100 py-4 mb-2">
+                          <div className="text-4xl md:text-5xl font-black text-[#f525bd] tracking-wide select-all drop-shadow-sm">
+                            {GLOBAL_VOUCHER_CODE}
+                          </div>
+                        </div>
+
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-2">
+                            Valid from 5th Jan till 30th April 2026
+                        </p>
+                        
+                        <a 
+                          href="/terms.pdf" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="absolute bottom-3 right-4 text-[9px] font-bold text-[#f79b4c] hover:text-[#f5831f] underline transition-colors"
+                        >
+                          T&C
+                        </a>
                       </div>
-                    </div>
-
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-2">
-                        Valid from 5th Jan till 30th April 2026
-                    </p>
-                    
-                    {/* --- T&C HYPERLINK --- */}
-                    <a 
-                      href="/terms.pdf" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="absolute bottom-3 right-4 text-[9px] font-bold text-[#f79b4c] hover:text-[#f5831f] underline transition-colors"
-                    >
-                      T&C
-                    </a>
+                    )}
                 </div>
-
-                <p className="mt-8 text-xs md:text-sm text-white/90 font-medium tracking-wide drop-shadow-md animate-pulse">
-                   Take a screenshot of this to apply the voucher for your next buy on RYOKO! 
-                </p>
             </div>
+
+            {isVoucherUnlocked && (
+              <p className="mt-8 text-xs md:text-sm text-white/90 font-medium tracking-wide drop-shadow-md animate-pulse">
+                 Take a screenshot of this to apply the voucher for your next buy on RYOKO! 
+              </p>
+            )}
 
             <button
               onClick={() => window.location.reload()}
