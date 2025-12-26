@@ -252,7 +252,7 @@ export default function Home() {
                       // --- LOCKED STATE: FORM ---
                       <form onSubmit={handleUnlockVoucher} className="flex flex-col gap-3">
                         <p className="text-sm font-bold text-[#f525bd] uppercase tracking-widest mb-2">
-                           Unlock Your $500 Voucher
+                           Unlock Your BDT500 Voucher
                         </p>
                         <p className="text-xs text-gray-500 mb-4">
                           Enter your details below to reveal your exclusive coupon code.
